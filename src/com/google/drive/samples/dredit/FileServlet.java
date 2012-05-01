@@ -45,167 +45,190 @@ import com.google.gson.Gson;
 
 /**
  * Servlet providing a small API for the DrEdit JavaScript client to use in
- * manipulating files.  Each operation (GET, POST, PUT) issues requests to the
+ * manipulating files. Each operation (GET, POST, PUT) issues requests to the
  * Google Drive API.
- *
+ * 
  * @author vicfryzel@google.com (Vic Fryzel)
  */
 public class FileServlet extends DrEditServlet {
-  /**
-   * Given a {@code file_id} URI parameter, return a JSON representation
-   * of the given file.
-   */
-  @Override
-  public void doGet(HttpServletRequest req, HttpServletResponse resp)
-      throws IOException {
-    Drive service = getDriveService(req, resp);
-    String fileId = req.getParameter("file_id");
+	/**
+	 * Given a {@code file_id} URI parameter, return a JSON representation of
+	 * the given file.
+	 */
+	@Override
+	public void doGet(HttpServletRequest req, HttpServletResponse resp)
+			throws IOException {
+		Drive service = getDriveService(req, resp);
+		String fileId = req.getParameter("file_id");
 
-    if (fileId == null) {
-      sendError(resp, 400, "The `file_id` URI parameter must be specified.");
-      return;
-    }
+		if (fileId == null) {
+			sendError(resp, 400,
+					"The `file_id` URI parameter must be specified.");
+			return;
+		}
 
-    File file = null;
-    try {
-      file = service.files().get(fileId).execute();
-    } catch (GoogleJsonResponseException e) {
-      if (e.getStatusCode() == 401) {
-        // The user has revoked our token or it is otherwise bad.
-        // Delete the local copy so that their next page load will recover.
-        deleteCredential(req, resp);
-        sendError(resp, 401, "Unauthorized");
-        return;
-      }
-    }
+		File file = null;
+		try {
+			file = service.files().get(fileId).execute();
+		} catch (GoogleJsonResponseException e) {
+			if (e.getStatusCode() == 401) {
+				// The user has revoked our token or it is otherwise bad.
+				// Delete the local copy so that their next page load will
+				// recover.
+				deleteCredential(req, resp);
+				sendError(resp, 401, "Unauthorized");
+				return;
+			}
+		}
 
-    if (file != null) {
-      String content = "null";
-      final CachedOpenDocumentFile documentFile = new CachedOpenDocumentFile(getFileContent(service, file));
+		if (file != null) {
+			String content = "null";
+			final CachedOpenDocumentFile documentFile = new CachedOpenDocumentFile(
+					getFileContent(service, file));
 
-      try {
-      if (isDocument(documentFile)) {
-          final OpenDocumentText text = new OpenDocumentText(documentFile);
-          final TranslatorOdt translatorOdt = new TranslatorOdt(text);
+			try {
+				if (isDocument(documentFile)) {
+					final OpenDocumentText text = new OpenDocumentText(
+							documentFile);
+					final TranslatorOdt translatorOdt = new TranslatorOdt(text);
 
-          content = translatorOdt.translate().getHtmlDocument().toString();
-      } else if (isSpreadsheet(documentFile)) {
-          final OpenDocumentSpreadsheet spreadsheet = new OpenDocumentSpreadsheet(documentFile);
-          final TranslatorOds translatorOds = new TranslatorOds(spreadsheet);
+					content = translatorOdt.translate().getHtmlDocument()
+							.toString();
+				} else if (isSpreadsheet(documentFile)) {
+					final OpenDocumentSpreadsheet spreadsheet = new OpenDocumentSpreadsheet(
+							documentFile);
+					final TranslatorOds translatorOds = new TranslatorOds(
+							spreadsheet);
 
-          content = translatorOds.translate().getHtmlDocument().toString();
-      }
-      } catch (Exception e) {
-    	  e.printStackTrace();
-    	  
-    	  Logger.getAnonymousLogger().log(Level.WARNING, e.toString());
-      }
+					content = translatorOds.translate().getHtmlDocument()
+							.toString();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 
-      Logger.getAnonymousLogger().log(Level.WARNING, content);
-      
-      resp.setContentType(JSON_MIMETYPE);
-      resp.getWriter().print(new ClientFile(file, content).toJson());
-    } else {
-      sendError(resp, 404, "File not found");
-    }
-  }
-  
-  private boolean isSpreadsheet(final CachedOpenDocumentFile file) throws IOException {
-      return file.getMimeType().startsWith(OpenDocumentSpreadsheet.MIMETYPE)
-              || file.getMimeType().startsWith(OpenDocumentSpreadsheetTemplate.MIMETYPE);
-  }
+				Logger.getAnonymousLogger().log(Level.WARNING, e.toString());
+			}
 
-  private boolean isDocument(final CachedOpenDocumentFile file) throws IOException {
-      return file.getMimeType().startsWith(OpenDocumentText.MIMETYPE)
-              || file.getMimeType().startsWith(OpenDocumentTextTemplate.MIMETYPE);
-  }
+			Logger.getAnonymousLogger().log(Level.WARNING, content);
 
-  /**
-   * Create a new file given a JSON representation, and return the JSON
-   * representation of the created file.
-   */
-  @Override
-  public void doPost(HttpServletRequest req, HttpServletResponse resp)
-      throws IOException {
-    Drive service = getDriveService(req, resp);
-    ClientFile clientFile = new ClientFile(req.getReader());
-    File file = clientFile.toFile();
+			resp.setContentType(JSON_MIMETYPE);
+			resp.getWriter().print(new ClientFile(file, content).toJson());
+		} else {
+			sendError(resp, 404, "File not found");
+		}
+	}
 
-    if (!clientFile.content.equals("")) {
-      file = service.files().insert(file,
-          ByteArrayContent.fromString(clientFile.mimeType, clientFile.content))
-          .execute();
-    } else {
-      file = service.files().insert(file).execute();
-    }
+	private boolean isSpreadsheet(final CachedOpenDocumentFile file)
+			throws IOException {
+		return file.getMimeType().startsWith(OpenDocumentSpreadsheet.MIMETYPE)
+				|| file.getMimeType().startsWith(
+						OpenDocumentSpreadsheetTemplate.MIMETYPE);
+	}
 
-    resp.setContentType(JSON_MIMETYPE);
-    resp.getWriter().print(new Gson().toJson(file.getId()).toString());
-  }
+	private boolean isDocument(final CachedOpenDocumentFile file)
+			throws IOException {
+		return file.getMimeType().startsWith(OpenDocumentText.MIMETYPE)
+				|| file.getMimeType().startsWith(
+						OpenDocumentTextTemplate.MIMETYPE);
+	}
 
-  /**
-   * Update a file given a JSON representation, and return the JSON
-   * representation of the created file.
-   */
-  @Override
-  public void doPut(HttpServletRequest req, HttpServletResponse resp)
-      throws IOException {
-    Drive service = getDriveService(req, resp);
-    ClientFile clientFile = new ClientFile(req.getReader());
-    File file = clientFile.toFile();
-    file = service.files().update(
-        clientFile.resource_id, file,
-        ByteArrayContent.fromString(clientFile.mimeType, clientFile.content))
-        .execute();
+	/**
+	 * Create a new file given a JSON representation, and return the JSON
+	 * representation of the created file.
+	 */
+	@Override
+	public void doPost(HttpServletRequest req, HttpServletResponse resp)
+			throws IOException {
+		Drive service = getDriveService(req, resp);
+		ClientFile clientFile = new ClientFile(req.getReader());
+		File file = clientFile.toFile();
 
-    resp.setContentType(JSON_MIMETYPE);
-    resp.getWriter().print(new Gson().toJson(file.getId()).toString());
-  }
+		if (!clientFile.content.equals("")) {
+			file = service
+					.files()
+					.insert(file,
+							ByteArrayContent.fromString(clientFile.mimeType,
+									clientFile.content)).execute();
+		} else {
+			file = service.files().insert(file).execute();
+		}
 
-  /**
-   * Download the content of the given file.
-   *
-   * @param service Drive service to use for downloading.
-   * @param file File metadata object whose content to download.
-   * @return String representation of file content.  String is returned here
-   *         because this app is setup for text/plain files.
-   * @throws IOException Thrown if the request fails for whatever reason.
-   */
-  private String downloadFileContent(Drive service, File file)
-      throws IOException {
-    GenericUrl url = new GenericUrl(file.getDownloadUrl());
-    HttpResponse response = service.getRequestFactory().buildGetRequest(url)
-        .execute();
-    try {
-      return new Scanner(response.getContent()).useDelimiter("\\A").next();
-    } catch (java.util.NoSuchElementException e) {
-      return "";
-    }
-  }
+		resp.setContentType(JSON_MIMETYPE);
+		resp.getWriter().print(new Gson().toJson(file.getId()).toString());
+	}
 
-  private InputStream getFileContent(Drive service, File file)
-	      throws IOException {
-    GenericUrl url = new GenericUrl(file.getDownloadUrl());
-    HttpResponse response = service.getRequestFactory().buildGetRequest(url)
-        .execute();
-    return response.getContent();
-  }
-  
-  /**
-   * Build and return a Drive service object based on given request parameters.
-   *
-   * @param req Request to use to fetch code parameter or accessToken session
-   *            attribute.
-   * @param resp HTTP response to use for redirecting for authorization if
-   *             needed.
-   * @return Drive service object that is ready to make requests, or null if
-   *         there was a problem.
-   */
-  private Drive getDriveService(HttpServletRequest req,
-      HttpServletResponse resp) {
-    Credential credentials = getCredential(req, resp);
+	/**
+	 * Update a file given a JSON representation, and return the JSON
+	 * representation of the created file.
+	 */
+	@Override
+	public void doPut(HttpServletRequest req, HttpServletResponse resp)
+			throws IOException {
+		Drive service = getDriveService(req, resp);
+		ClientFile clientFile = new ClientFile(req.getReader());
+		File file = clientFile.toFile();
+		file = service
+				.files()
+				.update(clientFile.resource_id,
+						file,
+						ByteArrayContent.fromString(clientFile.mimeType,
+								clientFile.content)).execute();
 
-    return Drive.builder(TRANSPORT, JSON_FACTORY)
-        .setHttpRequestInitializer(credentials).build();
-  }
+		resp.setContentType(JSON_MIMETYPE);
+		resp.getWriter().print(new Gson().toJson(file.getId()).toString());
+	}
+
+	/**
+	 * Download the content of the given file.
+	 * 
+	 * @param service
+	 *            Drive service to use for downloading.
+	 * @param file
+	 *            File metadata object whose content to download.
+	 * @return String representation of file content. String is returned here
+	 *         because this app is setup for text/plain files.
+	 * @throws IOException
+	 *             Thrown if the request fails for whatever reason.
+	 */
+	private String downloadFileContent(Drive service, File file)
+			throws IOException {
+		GenericUrl url = new GenericUrl(file.getDownloadUrl());
+		HttpResponse response = service.getRequestFactory()
+				.buildGetRequest(url).execute();
+		try {
+			return new Scanner(response.getContent()).useDelimiter("\\A")
+					.next();
+		} catch (java.util.NoSuchElementException e) {
+			return "";
+		}
+	}
+
+	private InputStream getFileContent(Drive service, File file)
+			throws IOException {
+		GenericUrl url = new GenericUrl(file.getDownloadUrl());
+		HttpResponse response = service.getRequestFactory()
+				.buildGetRequest(url).execute();
+		return response.getContent();
+	}
+
+	/**
+	 * Build and return a Drive service object based on given request
+	 * parameters.
+	 * 
+	 * @param req
+	 *            Request to use to fetch code parameter or accessToken session
+	 *            attribute.
+	 * @param resp
+	 *            HTTP response to use for redirecting for authorization if
+	 *            needed.
+	 * @return Drive service object that is ready to make requests, or null if
+	 *         there was a problem.
+	 */
+	private Drive getDriveService(HttpServletRequest req,
+			HttpServletResponse resp) {
+		Credential credentials = getCredential(req, resp);
+
+		return Drive.builder(TRANSPORT, JSON_FACTORY)
+				.setHttpRequestInitializer(credentials).build();
+	}
 }

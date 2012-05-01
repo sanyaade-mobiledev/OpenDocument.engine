@@ -33,102 +33,108 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * Abstract servlet that sets up credentials and provides some convenience
  * methods.
- *
+ * 
  * @author vicfryzel@google.com (Vic Fryzel)
  */
 public abstract class DrEditServlet extends HttpServlet {
-  protected static final HttpTransport TRANSPORT = new NetHttpTransport();
-  protected static final JsonFactory JSON_FACTORY = new JacksonFactory();
+	protected static final HttpTransport TRANSPORT = new NetHttpTransport();
+	protected static final JsonFactory JSON_FACTORY = new JacksonFactory();
 
-  /**
-   * Default MIME type of files created or handled by DrEdit.
-   *
-   * This is also set in the Google APIs Console under the Drive SDK tab.
-   */
-  public static final String DEFAULT_MIMETYPE = "text/plain";
+	/**
+	 * Default MIME type of files created or handled by DrEdit.
+	 * 
+	 * This is also set in the Google APIs Console under the Drive SDK tab.
+	 */
+	public static final String DEFAULT_MIMETYPE = "text/plain";
 
-  /**
-   * MIME type to use when sending responses back to DrEdit JavaScript client.
-   */
-  public static final String JSON_MIMETYPE = "application/json";
+	/**
+	 * MIME type to use when sending responses back to DrEdit JavaScript client.
+	 */
+	public static final String JSON_MIMETYPE = "application/json";
 
-  /**
-   * Path component under war/ to locate client_secrets.json file.
-   */
-  public static final String CLIENT_SECRETS_FILE_PATH
-      = "/WEB-INF/client_secrets.json";
+	/**
+	 * Path component under war/ to locate client_secrets.json file.
+	 */
+	public static final String CLIENT_SECRETS_FILE_PATH = "/WEB-INF/client_secrets.json";
 
-  /**
-   * Scopes for which to request access from the user.
-   */
-  public static final List<String> SCOPES = Arrays.asList(
-      // Required to access and manipulate files.
-      "https://www.googleapis.com/auth/drive.file",
-      // Required to identify the user in our data store.
-      "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/userinfo.profile");
+	/**
+	 * Scopes for which to request access from the user.
+	 */
+	public static final List<String> SCOPES = Arrays.asList(
+			// Required to access and manipulate files.
+			"https://www.googleapis.com/auth/drive.file",
+			// Required to identify the user in our data store.
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile");
 
-  protected void sendError(HttpServletResponse resp, int code, String message) {
-    try {
-      resp.sendError(code, message);
-    } catch (IOException e) {
-      throw new RuntimeException(message);
-    }
-  }
+	protected void sendError(HttpServletResponse resp, int code, String message) {
+		try {
+			resp.sendError(code, message);
+		} catch (IOException e) {
+			throw new RuntimeException(message);
+		}
+	}
 
-  protected InputStream getClientSecretsStream() {
-    return getServletContext().getResourceAsStream(CLIENT_SECRETS_FILE_PATH);
-  }
+	protected InputStream getClientSecretsStream() {
+		return getServletContext()
+				.getResourceAsStream(CLIENT_SECRETS_FILE_PATH);
+	}
 
-  protected CredentialMediator getCredentialMediator(
-      HttpServletRequest req, HttpServletResponse resp) {
-    // Authorize or fetch credentials.  Required here to ensure this happens
-    // on first page load.  Then, credentials will be stored in the user's
-    // session.
-    CredentialMediator mediator;
-    try {
-      mediator = new CredentialMediator(req, getClientSecretsStream(), SCOPES);
-      mediator.getActiveCredential();
-      return mediator;
-    } catch (CredentialMediator.NoRefreshTokenException e) {
-      try {
-        resp.sendRedirect(e.getAuthorizationUrl());
-      } catch (IOException ioe) {
-        throw new RuntimeException("Failed to redirect user for authorization");
-      }
-      throw new RuntimeException("No refresh token found. Re-authorizing.");
-    } catch (InvalidClientSecretsException e) {
-      String message = String.format(
-          "This application is not properly configured: %s", e.getMessage());
-      sendError(resp, 500, message);
-      throw new RuntimeException(message);
-    }
-  }
+	protected CredentialMediator getCredentialMediator(HttpServletRequest req,
+			HttpServletResponse resp) {
+		// Authorize or fetch credentials. Required here to ensure this happens
+		// on first page load. Then, credentials will be stored in the user's
+		// session.
+		CredentialMediator mediator;
+		try {
+			mediator = new CredentialMediator(req, getClientSecretsStream(),
+					SCOPES);
+			mediator.getActiveCredential();
+			return mediator;
+		} catch (CredentialMediator.NoRefreshTokenException e) {
+			try {
+				resp.sendRedirect(e.getAuthorizationUrl());
+			} catch (IOException ioe) {
+				throw new RuntimeException(
+						"Failed to redirect user for authorization");
+			}
+			throw new RuntimeException(
+					"No refresh token found. Re-authorizing.");
+		} catch (InvalidClientSecretsException e) {
+			String message = String.format(
+					"This application is not properly configured: %s",
+					e.getMessage());
+			sendError(resp, 500, message);
+			throw new RuntimeException(message);
+		}
+	}
 
-  protected Credential getCredential(
-      HttpServletRequest req, HttpServletResponse resp) {
-    try {
-      CredentialMediator mediator = getCredentialMediator(req, resp);
-      return mediator.getActiveCredential();
-    } catch(CredentialMediator.NoRefreshTokenException e) {
-      try {
-        resp.sendRedirect(e.getAuthorizationUrl());
-      } catch (IOException ioe) {
-        ioe.printStackTrace();
-        throw new RuntimeException("Failed to redirect for authorization.");
-      }
-    }
-    return null;
-  }
+	protected Credential getCredential(HttpServletRequest req,
+			HttpServletResponse resp) {
+		try {
+			CredentialMediator mediator = getCredentialMediator(req, resp);
+			return mediator.getActiveCredential();
+		} catch (CredentialMediator.NoRefreshTokenException e) {
+			try {
+				resp.sendRedirect(e.getAuthorizationUrl());
+			} catch (IOException ioe) {
+				ioe.printStackTrace();
+				throw new RuntimeException(
+						"Failed to redirect for authorization.");
+			}
+		}
+		return null;
+	}
 
-  protected String getClientId(
-      HttpServletRequest req, HttpServletResponse resp) {
-    return getCredentialMediator(req, resp).getClientSecrets().getWeb()
-        .getClientId();
-  }
+	protected String getClientId(HttpServletRequest req,
+			HttpServletResponse resp) {
+		return getCredentialMediator(req, resp).getClientSecrets().getWeb()
+				.getClientId();
+	}
 
-  protected void deleteCredential(HttpServletRequest req, HttpServletResponse resp) {
-    CredentialMediator mediator = getCredentialMediator(req, resp);
-    mediator.deleteActiveCredential();
-  }
+	protected void deleteCredential(HttpServletRequest req,
+			HttpServletResponse resp) {
+		CredentialMediator mediator = getCredentialMediator(req, resp);
+		mediator.deleteActiveCredential();
+	}
 }

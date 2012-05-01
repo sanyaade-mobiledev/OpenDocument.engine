@@ -20,12 +20,13 @@ var onSuccess = function(data, result, xhr) {
   document.title += ' - ' + data['title'];
   document.body.innerHTML = data['content'];
   }
-}
-
+};
 
 var onError = function(xhr, text_status, error) {
-  console.log(error);
-}
+  if (xhr.status == 302) {
+	  document.location.href = xhr.getResponseHeader('Location');
+  }
+};
 
 var get = function(file_id) {
   $.ajax({
@@ -33,4 +34,4 @@ var get = function(file_id) {
       success: onSuccess,
       error: onError
   });
-}
+};
