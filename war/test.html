@@ -1,0 +1,86 @@
+<!doctype html>
+
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+
+        <title>OpenDocument Reader</title>
+        <base target="_blank">
+
+        <link rel="stylesheet" type="text/css" href="static/announcify.web.css" />
+
+        <script src="static/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="static/dredit.js" type="text/javascript" charset="utf-8"></script>
+        <script type="text/javascript" language="javascript" charset="utf-8" src="static/sidebar.js"></script>
+        
+        <script type="text/javascript">
+          var _gaq = _gaq || [];
+          _gaq.push(['_setAccount', 'UA-26989214-3']);
+          _gaq.push(['_trackPageview']);
+        
+          (function() {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+          })();
+        </script>
+    </head>
+
+    <body>
+        <div id="titlebar">
+            <h1 id="heading"></h1>
+        </div>
+
+        <div id="sidebar">
+            <div class="badge">
+                <a href="https://chrome.google.com/webstore/detail/jpcfmmdlhndnfpagbmhbbfehenapoich" title="Rate">
+                    <img src="static/store_badge.png" class="store-icon" alt="Chrome Web Store" title="Rate it on Chrome Webstore
+                    "/>
+                </a>
+            </div>
+            <hr />
+            <div class="badge">
+                <a href="https://plus.google.com/108466870039650470305" title="Give feedback">
+                    <img src="static/gplus_badge.png" class="store-icon" alt="Google+" title="Give feedback on Google+"/>
+                </a>
+            </div>
+            <hr />
+            <div class="badge">
+                <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=DVXPSF5LKXV7Q" title="Support us">
+                    <img src="static/paypal_badge.png" class="store-icon" alt="PayPal" title="Donate and help us via PayPal"/>
+                </a>
+            </div>
+            <hr />
+            <div id="creators">
+                <ul id="links">
+                    <a href="https://plus.google.com/110382868498576404279" title="Dominic Bartl">
+                        <li><img src="https://lh3.googleusercontent.com/-TqJhWzAEdNs/AAAAAAAAAAI/AAAAAAAAAWs/BZBHsedc_p0/photo.jpg?sz=84" alt="Dominic Bartl" title="Dominic Bartl" /></li>
+                    </a>
+                    <a href="https://plus.google.com/100729111222090689611" title="Andreas Stefl">
+                        <li><img src="https://lh3.googleusercontent.com/-a9sDm_noFPE/AAAAAAAAAAI/AAAAAAAAAE0/Abtxk9MzBTc/s250-c-k/photo.jpg?sz=84" alt="Andreas Stefl" title="Andreas Stefl" /></li>
+                    </a>
+                    <a href="https://plus.google.com/108466870039650470305" title="Thomas Taschauer">
+                        <li><img src="https://lh3.googleusercontent.com/-xnmC2NFb6Vc/AAAAAAAAAAI/AAAAAAAAFkM/1Fi0k-mViws/photo.jpg?sz=84" alt="Thomas Taschauer" title="Thomas Taschauer" /></li>
+                    </a>
+                </ul>
+            </div>
+        </div>
+
+        <div id="div_ad">
+            <div id="azk1"></div>
+            <a href="javascript:disableAds();">Y U show ads? :@</a>
+        </div>
+
+        <div id="content" align="center">
+            <img src="static/loading.gif" alt="Loading..."></img>
+        </div>
+
+        <script type="text/javascript">
+            if (!localStorage.getItem('disableAds')) {
+                var z=document.createElement("script");z.type="text/javascript";z.async=true;z.src="http://engine.adzerk.net/z/13179/azk1_2_6";var s = document.getElementsByTagName("script")[0];s.parentNode.insertBefore(z, s);
+            } else {
+                removeAds();
+            }
+        </script>
+    </body>
+</html>

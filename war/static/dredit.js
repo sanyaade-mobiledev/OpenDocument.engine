@@ -15,10 +15,10 @@
 var onSuccess = function(data, result, xhr) {
   if (data.redirect) {
     window.location.href = data.redirect;
-  }
-  else {
-  document.title += ' - ' + data['title'];
-  document.body.innerHTML = data['content'];
+  } else {
+    document.getElementById("heading").innerText = data['title'];
+    document.title += ' - ' + data['title'];
+    document.getElementById('content').innerHTML = data['content'];
   }
 };
 
