@@ -1,0 +1,15 @@
+{
+  "name" : "OpenOffice Document Reader",
+  "version" : "3",
+  "description" : "It's the cloud's first OpenOffice Document Reader",
+  "container" : "GOOGLE_DRIVE",
+  "api_console_project_id" : "672320429401",
+  "icons": {
+    "128": "icon-128.png"
+  },
+  "app" : {
+    "launch" : {
+      "web_url" : "https://opendocument-engine.appspot.com/"
+    }
+  }
+}
