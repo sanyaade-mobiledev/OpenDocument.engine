@@ -12,7 +12,7 @@
  * the License.
  */
 
-package com.google.drive.samples.dredit.model;
+package at.tomtasche.reader.engine.model;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

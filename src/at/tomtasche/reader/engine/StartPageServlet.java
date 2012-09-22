@@ -1,18 +1,4 @@
-/*
- * Copyright (c) 2012 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
-
-package com.google.drive.samples.dredit;
+package at.tomtasche.reader.engine;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,16 +8,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.google.drive.samples.dredit.model.State;
+import at.tomtasche.reader.engine.model.State;
+
 import com.google.gson.Gson;
 
-/**
- * Servlet to check that the current user is authorized and to serve the start
- * page for DrEdit.
- * 
- * @author vicfryzel@google.com (Vic Fryzel)
- */
-public class StartPageServlet extends DrEditServlet {
+@SuppressWarnings("serial")
+public class StartPageServlet extends DriveServlet {
+
 	/**
 	 * Ensure that the user is authorized, and setup the required values for
 	 * index.jsp.
@@ -49,13 +32,13 @@ public class StartPageServlet extends DrEditServlet {
 				ids = state.ids;
 			}
 		}
+
 		if (ids.isEmpty()) {
 			resp.sendRedirect(resp
 					.encodeRedirectURL("https://chrome.google.com/webstore/detail/jpcfmmdlhndnfpagbmhbbfehenapoich"));
 		} else {
-			// TODO: this automatically redirects to the authorization page if the user didn't already do so.
-		    getClientId(req, resp);
-			
+			getClientId(req, resp);
+
 			req.setAttribute("ids", new Gson().toJson(ids).toString());
 			req.getRequestDispatcher("/index.jsp").forward(req, resp);
 		}

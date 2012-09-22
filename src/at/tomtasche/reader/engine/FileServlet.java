@@ -1,23 +1,7 @@
-/*
- * Copyright (c) 2012 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
-
-package com.google.drive.samples.dredit;
+package at.tomtasche.reader.engine;
 
 import java.io.CharArrayWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,24 +18,14 @@ import at.andiwand.odf2html.odf.OpenDocumentText;
 import at.andiwand.odf2html.odf.TemporaryOpenDocumentFile;
 import at.andiwand.odf2html.translator.document.SpreadsheetTranslator;
 import at.andiwand.odf2html.translator.document.TextTranslator;
+import at.tomtasche.reader.engine.model.ClientFile;
 
-import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpResponse;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
-import com.google.drive.samples.dredit.model.ClientFile;
 
-/**
- * Servlet providing a small API for the DrEdit JavaScript client to use in
- * manipulating files. Each operation (GET, POST, PUT) issues requests to the
- * Google Drive API.
- * 
- * @author vicfryzel@google.com (Vic Fryzel)
- */
 @SuppressWarnings("serial")
-public class FileServlet extends DrEditServlet {
+public class FileServlet extends DriveServlet {
 
 	/**
 	 * Given a {@code file_id} URI parameter, return a JSON representation of
@@ -85,7 +59,7 @@ public class FileServlet extends DrEditServlet {
 
 		if (file != null) {
 			String password = null;
-			StringWriter stringWriter = new StringWriter();
+			CharArrayWriter writer = new CharArrayWriter();
 			try {
 				OpenDocumentFile documentFile = new TemporaryOpenDocumentFile(
 						getFileContent(service, file));
@@ -102,25 +76,19 @@ public class FileServlet extends DrEditServlet {
 
 				OpenDocument document = documentFile.getAsOpenDocument();
 				if (document instanceof OpenDocumentText) {
-					CharArrayWriter writer = new CharArrayWriter();
 					LWXMLWriter out = new LWXMLStreamWriter(writer);
 					try {
 						TextTranslator translator = new TextTranslator();
 						translator.translate(document, out);
-
-						writer.writeTo(stringWriter);
 					} finally {
 						out.close();
 						writer.close();
 					}
 				} else if (document instanceof OpenDocumentSpreadsheet) {
 					SpreadsheetTranslator translator = new SpreadsheetTranslator();
-					CharArrayWriter writer = new CharArrayWriter();
 					LWXMLWriter out = new LWXMLStreamWriter(writer);
 					try {
 						translator.translate(document, out);
-
-						writer.writeTo(stringWriter);
 					} finally {
 						out.close();
 						writer.close();
@@ -135,8 +103,7 @@ public class FileServlet extends DrEditServlet {
 				Logger.getAnonymousLogger().log(Level.WARNING, e.toString());
 			}
 
-			String result = stringWriter.toString();
-
+			String result = writer.toString();
 			Logger.getAnonymousLogger().log(Level.WARNING, result);
 
 			resp.setContentType(JSON_MIMETYPE);
@@ -144,34 +111,5 @@ public class FileServlet extends DrEditServlet {
 		} else {
 			sendError(resp, 404, "File not found");
 		}
-	}
-
-	private InputStream getFileContent(Drive service, File file)
-			throws IOException {
-		GenericUrl url = new GenericUrl(file.getDownloadUrl());
-		HttpResponse response = service.getRequestFactory()
-				.buildGetRequest(url).execute();
-		return response.getContent();
-	}
-
-	/**
-	 * Build and return a Drive service object based on given request
-	 * parameters.
-	 * 
-	 * @param req
-	 *            Request to use to fetch code parameter or accessToken session
-	 *            attribute.
-	 * @param resp
-	 *            HTTP response to use for redirecting for authorization if
-	 *            needed.
-	 * @return Drive service object that is ready to make requests, or null if
-	 *         there was a problem.
-	 */
-	private Drive getDriveService(HttpServletRequest req,
-			HttpServletResponse resp) {
-		Credential credentials = getCredential(req, resp);
-
-		return Drive.builder(TRANSPORT, JSON_FACTORY)
-				.setHttpRequestInitializer(credentials).build();
 	}
 }

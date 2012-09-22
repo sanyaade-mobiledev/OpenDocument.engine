@@ -12,7 +12,7 @@
  * the License.
  */
 
-package com.google.drive.samples.dredit;
+package at.tomtasche.reader.engine;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.auth.oauth2.CredentialStore;
@@ -332,6 +332,7 @@ public class CredentialMediator {
 	/**
 	 * Exception thrown when no refresh token has been found.
 	 */
+	@SuppressWarnings("serial")
 	public static class NoRefreshTokenException extends Exception {
 
 		/**
@@ -360,6 +361,7 @@ public class CredentialMediator {
 	/**
 	 * Exception thrown when client_secrets.json is missing or invalid.
 	 */
+	@SuppressWarnings("serial")
 	public static class InvalidClientSecretsException extends Exception {
 		/**
 		 * Construct an InvalidClientSecretsException with a message.
@@ -375,12 +377,14 @@ public class CredentialMediator {
 	/**
 	 * Exception thrown when no email address could be retrieved.
 	 */
+	@SuppressWarnings("serial")
 	private static class NoUserIdException extends Exception {
 	}
 
 	/**
 	 * Exception thrown when a code exchange has failed.
 	 */
+	@SuppressWarnings("serial")
 	private static class CodeExchangeException extends Exception {
 	}
 }

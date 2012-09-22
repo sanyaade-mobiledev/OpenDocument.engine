@@ -3,9 +3,8 @@
 <html>
   <head>
   	<title>OpenOffice Document Reader</title>
-    <link rel="stylesheet" href="/static/dredit.css"></link>
     <script src="/static/jquery.min.js" type="text/javascript" charset="utf-8"></script>
-    <script src="/static/dredit.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/static/script.js" type="text/javascript" charset="utf-8"></script>
   </head>
   <body>
   	Loading...

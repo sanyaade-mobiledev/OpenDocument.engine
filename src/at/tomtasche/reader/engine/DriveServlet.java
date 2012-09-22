@@ -12,14 +12,19 @@
  * the License.
  */
 
-package com.google.drive.samples.dredit;
+package at.tomtasche.reader.engine;
+
+import at.tomtasche.reader.engine.CredentialMediator.InvalidClientSecretsException;
 
 import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
-import com.google.drive.samples.dredit.CredentialMediator.InvalidClientSecretsException;
+import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.model.File;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +41,8 @@ import javax.servlet.http.HttpServletResponse;
  * 
  * @author vicfryzel@google.com (Vic Fryzel)
  */
-public abstract class DrEditServlet extends HttpServlet {
+@SuppressWarnings("serial")
+public abstract class DriveServlet extends HttpServlet {
 	protected static final HttpTransport TRANSPORT = new NetHttpTransport();
 	protected static final JsonFactory JSON_FACTORY = new JacksonFactory();
 
@@ -136,5 +142,34 @@ public abstract class DrEditServlet extends HttpServlet {
 			HttpServletResponse resp) {
 		CredentialMediator mediator = getCredentialMediator(req, resp);
 		mediator.deleteActiveCredential();
+	}
+
+	/**
+	 * Build and return a Drive service object based on given request
+	 * parameters.
+	 * 
+	 * @param req
+	 *            Request to use to fetch code parameter or accessToken session
+	 *            attribute.
+	 * @param resp
+	 *            HTTP response to use for redirecting for authorization if
+	 *            needed.
+	 * @return Drive service object that is ready to make requests, or null if
+	 *         there was a problem.
+	 */
+	protected Drive getDriveService(HttpServletRequest req,
+			HttpServletResponse resp) {
+		Credential credentials = getCredential(req, resp);
+
+		return Drive.builder(TRANSPORT, JSON_FACTORY)
+				.setHttpRequestInitializer(credentials).build();
+	}
+
+	protected InputStream getFileContent(Drive service, File file)
+			throws IOException {
+		GenericUrl url = new GenericUrl(file.getDownloadUrl());
+		HttpResponse response = service.getRequestFactory()
+				.buildGetRequest(url).execute();
+		return response.getContent();
 	}
 }
