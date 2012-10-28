@@ -36,16 +36,15 @@ public class FileServlet extends DriveServlet {
 			throws IOException {
 		Drive service = getDriveService(req, resp);
 		String fileId = req.getParameter("file_id");
-
 		if (fileId == null) {
 			sendError(resp, 400,
 					"The `file_id` URI parameter must be specified.");
 			return;
 		}
 
-		File file = null;
+		File driveFile = null;
 		try {
-			file = service.files().get(fileId).execute();
+			driveFile = service.files().get(fileId).execute();
 		} catch (GoogleJsonResponseException e) {
 			if (e.getStatusCode() == 401) {
 				// The user has revoked our token or it is otherwise bad.
@@ -57,12 +56,13 @@ public class FileServlet extends DriveServlet {
 			}
 		}
 
-		if (file != null) {
+		if (driveFile != null) {
 			String password = null;
 			CharArrayWriter writer = new CharArrayWriter();
+			AppEngineFileCache cache = new AppEngineFileCache();
 			try {
 				OpenDocumentFile documentFile = new TemporaryOpenDocumentFile(
-						getFileContent(service, file));
+						getFileContent(service, driveFile), cache);
 				String mimeType = documentFile.getMimetype();
 				if (!OpenDocument.checkMimetype(mimeType)) {
 					throw new IllegalMimeTypeException();
@@ -78,14 +78,15 @@ public class FileServlet extends DriveServlet {
 				if (document instanceof OpenDocumentText) {
 					LWXMLWriter out = new LWXMLStreamWriter(writer);
 					try {
-						TextTranslator translator = new TextTranslator();
+						TextTranslator translator = new TextTranslator(cache);
 						translator.translate(document, out);
 					} finally {
 						out.close();
 						writer.close();
 					}
 				} else if (document instanceof OpenDocumentSpreadsheet) {
-					SpreadsheetTranslator translator = new SpreadsheetTranslator();
+					SpreadsheetTranslator translator = new SpreadsheetTranslator(
+							cache);
 					LWXMLWriter out = new LWXMLStreamWriter(writer);
 					try {
 						translator.translate(document, out);
@@ -100,14 +101,18 @@ public class FileServlet extends DriveServlet {
 			} catch (Exception e) {
 				e.printStackTrace();
 
-				Logger.getAnonymousLogger().log(Level.WARNING, e.toString());
+				Logger.getAnonymousLogger().log(Level.SEVERE, "error", e);
+
+				sendError(resp, 500, "Could not display file");
+
+				return;
 			}
 
 			String result = writer.toString();
-			Logger.getAnonymousLogger().log(Level.WARNING, result);
+			Logger.getAnonymousLogger().log(Level.WARNING, "result", result);
 
 			resp.setContentType(JSON_MIMETYPE);
-			resp.getWriter().print(new ClientFile(file, result).toJson());
+			resp.getWriter().print(new ClientFile(driveFile, result).toJson());
 		} else {
 			sendError(resp, 404, "File not found");
 		}
